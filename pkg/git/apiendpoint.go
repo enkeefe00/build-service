@@ -26,6 +26,15 @@ func (g *GitlabAPIEndpoint) APIEndpoint(host string) string {
 	return fmt.Sprintf("https://%s/api/v4/", host)
 }
 
+// GiteaAPIEndpoint represents an API endpoint for Gitea.
+type GiteaAPIEndpoint struct {
+}
+
+// APIEndpoint returns the API Gitea endpoint.
+func (g *GiteaAPIEndpoint) APIEndpoint(host string) string {
+	return fmt.Sprintf("https://%s/api/v1/", host)
+}
+
 // UnknownAPIEndpoint represents an endpoint for unknown or non existed provider. It returns empty string for api endpoint.
 type UnknownAPIEndpoint struct {
 }
@@ -42,6 +51,8 @@ func BuildAPIEndpoint(endpointType string) APIEndpoint {
 		return &GithubAPIEndpoint{}
 	case "gitlab":
 		return &GitlabAPIEndpoint{}
+	case "gitea":
+		return &GiteaAPIEndpoint{}
 	default:
 		return &UnknownAPIEndpoint{}
 	}
