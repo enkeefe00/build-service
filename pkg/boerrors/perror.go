@@ -191,7 +191,7 @@ var boErrorMessages = map[BOErrorId]string{
 	EPaCSecretInvalid:           "Invalid Pipelines as Code secret",
 	EPaCRouteDoesNotExist:       "Pipelines as Code public route does not exist",
 	EPaCDuplicateRepository:     "Git repository is already handled by Pipelines as Code",
-	EPaCNotAllowedRepositoryUrl: "Git repository url isn't allowed",
+	EPaCNotAllowedRepositoryUrl: "Git repository is restricted from being onboarded. It must be added to the allow list.",
 
 	EUnknownGitProvider:    "unknown git provider of the source repository",
 	EHttpUsedForRepository: "http used for git repository, use secure connection",
