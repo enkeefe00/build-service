@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	. "github.com/konflux-ci/build-service/pkg/common"
+	"github.com/konflux-ci/build-service/pkg/git/gitea"
 	"github.com/konflux-ci/build-service/pkg/git/github"
 	"github.com/konflux-ci/build-service/pkg/git/gitlab"
 )
@@ -44,6 +45,14 @@ func TestGetContainerImageRepository(t *testing.T) {
 			return nil, nil
 		}
 		gitlab.NewGitlabClientWithBasicAuth = func(username, password, baseUrl string) (*gitlab.GitlabClient, error) {
+			t.Errorf("should not be invoked")
+			return nil, nil
+		}
+		gitea.NewGiteaClient = func(accessToken, baseUrl string) (*gitea.GiteaClient, error) {
+			t.Errorf("should not be invoked")
+			return nil, nil
+		}
+		gitea.NewGiteaClientWithBasicAuth = func(username, password, baseUrl string) (*gitea.GiteaClient, error) {
 			t.Errorf("should not be invoked")
 			return nil, nil
 		}
@@ -212,6 +221,75 @@ func TestGetContainerImageRepository(t *testing.T) {
 				},
 				GitProvider: "gitlab",
 				RepoUrl:     "https://",
+			},
+			allowConstructors: func() {},
+			expectError:       true,
+		},
+		{
+			name: "should create Gitea client from token",
+			gitClientConfig: GitClientConfig{
+				PacSecretData: map[string][]byte{
+					"password": []byte("token"),
+				},
+				GitProvider: "gitea",
+				RepoUrl:     "https://gitea.example.com/my-org/my-repo",
+			},
+			allowConstructors: func() {
+				gitea.NewGiteaClient = func(accessToken, baseUrl string) (*gitea.GiteaClient, error) {
+					expectedBaseUrl := "https://gitea.example.com/"
+					expectedToken := "token"
+					if baseUrl != expectedBaseUrl {
+						return nil, fmt.Errorf("Expected to get baseUrl: %s, got %s", expectedBaseUrl, baseUrl)
+					}
+					if accessToken != expectedToken {
+						return nil, fmt.Errorf("Expected to get token: %s, got %s", expectedToken, accessToken)
+					}
+					return &gitea.GiteaClient{}, nil
+				}
+			},
+			expectError: false,
+		},
+		{
+			name: "should create Gitea client from username and password",
+			gitClientConfig: GitClientConfig{
+				PacSecretData: map[string][]byte{
+					"username": []byte("user"),
+					"password": []byte("pass"),
+				},
+				GitProvider: "gitea",
+				RepoUrl:     "https://gitea.example.com/my-org/my-repo",
+			},
+			allowConstructors: func() {
+				gitea.NewGiteaClientWithBasicAuth = func(username, password, baseUrl string) (*gitea.GiteaClient, error) {
+					expectedBaseUrl := "https://gitea.example.com/"
+					if baseUrl != expectedBaseUrl {
+						return nil, fmt.Errorf("Expected to get baseUrl: %s, got %s", expectedBaseUrl, baseUrl)
+					}
+					return &gitea.GiteaClient{}, nil
+				}
+			},
+			expectError: false,
+		},
+		{
+			name: "should fail to create Gitea client since the base url can't be detected",
+			gitClientConfig: GitClientConfig{
+				PacSecretData: map[string][]byte{
+					"password": []byte("token"),
+				},
+				GitProvider: "gitea",
+				RepoUrl:     "https://",
+			},
+			allowConstructors: func() {},
+			expectError:       true,
+		},
+		{
+			name: "should not create Gitea client from SSH key",
+			gitClientConfig: GitClientConfig{
+				PacSecretData: map[string][]byte{
+					"ssh-privatekey": []byte("ssh-key"),
+				},
+				GitProvider: "gitea",
+				RepoUrl:     "https://gitea.example.com/my-org/my-repo",
 			},
 			allowConstructors: func() {},
 			expectError:       true,

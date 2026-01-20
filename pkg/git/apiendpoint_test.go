@@ -37,6 +37,18 @@ func TestBuildEndpoint(t *testing.T) {
 			wantEndpoint: "https://gitlab.umbrella.com/api/v4/",
 		},
 		{
+			name:         "Gitea SAAS",
+			endpointType: "gitea",
+			host:         "gitea.com",
+			wantEndpoint: "https://gitea.com/api/v1/",
+		},
+		{
+			name:         "Gitea Self-hosted",
+			endpointType: "gitea",
+			host:         "gitea.example.com",
+			wantEndpoint: "https://gitea.example.com/api/v1/",
+		},
+		{
 			name:         "Unknown provider",
 			endpointType: "bibi",
 			host:         "bibi.umbrella.com",

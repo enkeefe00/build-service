@@ -1,5 +1,5 @@
 /*
-Copyright 2023 Red Hat, Inc.
+Copyright 2023-2026 Red Hat, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -147,6 +147,20 @@ const (
 	// EGitLabBranchDoesntExist GitLab branch doesn't exist
 	EGitLabBranchDoesntExist BOErrorId = 94
 
+	// EGiteaTokenUnauthorized access token is not recognized by Gitea and 401 is responded.
+	// The access token may be malformed or expired.
+	EGiteaTokenUnauthorized BOErrorId = 110
+	// EGiteaTokenInsufficientScope the access token does not have sufficient scope and 403 is responded.
+	EGiteaTokenInsufficientScope BOErrorId = 111
+	// EGiteaBranchDoesntExist branch does not exist.
+	EGiteaBranchDoesntExist BOErrorId = 112
+	// EGiteaRepositoryNotFound repository not found, 404 is responded.
+	EGiteaRepositoryNotFound BOErrorId = 113
+	// EGiteaSecretTypeNotSupported the secret type with Gitea credentials is not supported.
+	EGiteaSecretTypeNotSupported BOErrorId = 114
+	// EGiteaGitAppNotSupported Git App functionality is not supported for this provider.
+	EGiteaGitAppNotSupported BOErrorId = 115
+
 	// Value of 'image.redhat.com/image' component annotation is not a valid json or the json has invalid structure.
 	EFailedToParseImageAnnotation BOErrorId = 200
 	// The secret with git credentials specified in component.Spec.Secret does not exist in the user's namespace.
@@ -214,6 +228,13 @@ var boErrorMessages = map[BOErrorId]string{
 	EGitLabTokenBlockedAccount:    "Access token has blocked account",
 	EGitLabSecretTypeNotSupported: "The secret type with GitLab credentials is not supported",
 	EGitLabBranchDoesntExist:      "GitLab branch does not exist",
+
+	EGiteaTokenUnauthorized:      "Access token is unrecognizable by Gitea service",
+	EGiteaTokenInsufficientScope: "Gitea access token does not have enough scope",
+	EGiteaBranchDoesntExist:      "Gitea branch does not exist",
+	EGiteaRepositoryNotFound:     "Gitea repository not found",
+	EGiteaSecretTypeNotSupported: "The secret type with Gitea credentials is not supported",
+	EGiteaGitAppNotSupported:     "Git App functionality is not supported for Gitea",
 
 	EFailedToParseImageAnnotation:        "Failed to parse image.redhat.com/image annotation value",
 	EComponentGitSecretMissing:           "Secret with git credential not found",
