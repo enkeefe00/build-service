@@ -1198,6 +1198,28 @@ func TestGeneratePACRepository(t *testing.T) {
 				Type: "gitlab",
 			},
 		},
+		{
+			name:    "should create PaC repository for Forgejo webhook with gitea type for PaC compatibility",
+			repoUrl: "https://forgejo.example.com/user/test-component-repository/",
+			componentAnnotations: map[string]string{
+				GitProviderAnnotationName: "forgejo",
+			},
+			pacConfig: map[string][]byte{
+				"password": []byte("forgejo-token"),
+			},
+			expectedGitProviderConfig: &pacv1alpha1.GitProvider{
+				Secret: &pacv1alpha1.Secret{
+					Name: PipelinesAsCodeGitHubAppSecretName,
+					Key:  "password",
+				},
+				WebhookSecret: &pacv1alpha1.Secret{
+					Name: pipelinesAsCodeWebhooksSecretName,
+					Key:  getWebhookSecretKeyForComponent(getComponent("https://forgejo.example.com/user/test-component-repository/", nil)),
+				},
+				URL:  "https://forgejo.example.com",
+				Type: "gitea",
+			},
+		},
 	}
 
 	for _, tt := range tests {

@@ -219,6 +219,11 @@ func generatePACRepository(component appstudiov1alpha1.Component, config *corev1
 			// https://pipelinesascode.com/docs/guide/incoming_webhook/#incoming-webhook-url
 			gitProviderType = "bitbucket-cloud"
 		}
+		// TODO it's a temp workaround; PaC will release full support in March 2026; drop this then
+		if gitProvider == "forgejo" {
+			// Forgejo is API-compatible with Gitea, and PaC supports Gitea
+			gitProviderType = "gitea"
+		}
 		gitProviderConfig.Type = gitProviderType
 
 		var gitProviderUrl string
