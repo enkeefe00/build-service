@@ -147,19 +147,19 @@ const (
 	// EGitLabBranchDoesntExist GitLab branch doesn't exist
 	EGitLabBranchDoesntExist BOErrorId = 94
 
-	// EGiteaTokenUnauthorized access token is not recognized by Gitea and 401 is responded.
+	// EForgejoTokenUnauthorized access token is not recognized by Forgejo and 401 is responded.
 	// The access token may be malformed or expired.
-	EGiteaTokenUnauthorized BOErrorId = 110
-	// EGiteaTokenInsufficientScope the access token does not have sufficient scope and 403 is responded.
-	EGiteaTokenInsufficientScope BOErrorId = 111
-	// EGiteaBranchDoesntExist branch does not exist.
-	EGiteaBranchDoesntExist BOErrorId = 112
-	// EGiteaRepositoryNotFound repository not found, 404 is responded.
-	EGiteaRepositoryNotFound BOErrorId = 113
-	// EGiteaSecretTypeNotSupported the secret type with Gitea credentials is not supported.
-	EGiteaSecretTypeNotSupported BOErrorId = 114
-	// EGiteaGitAppNotSupported Git App functionality is not supported for this provider.
-	EGiteaGitAppNotSupported BOErrorId = 115
+	EForgejoTokenUnauthorized BOErrorId = 110
+	// EForgejoTokenInsufficientScope the access token does not have sufficient scope and 403 is responded.
+	EForgejoTokenInsufficientScope BOErrorId = 111
+	// EForgejoBranchDoesntExist branch does not exist.
+	EForgejoBranchDoesntExist BOErrorId = 112
+	// EForgejoRepositoryNotFound repository not found, 404 is responded.
+	EForgejoRepositoryNotFound BOErrorId = 113
+	// EForgejoSecretTypeNotSupported the secret type with Forgejo credentials is not supported.
+	EForgejoSecretTypeNotSupported BOErrorId = 114
+	// EForgejoGitAppNotSupported Git App functionality is not supported for this provider.
+	EForgejoGitAppNotSupported BOErrorId = 115
 
 	// Value of 'image.redhat.com/image' component annotation is not a valid json or the json has invalid structure.
 	EFailedToParseImageAnnotation BOErrorId = 200
@@ -229,12 +229,12 @@ var boErrorMessages = map[BOErrorId]string{
 	EGitLabSecretTypeNotSupported: "The secret type with GitLab credentials is not supported",
 	EGitLabBranchDoesntExist:      "GitLab branch does not exist",
 
-	EGiteaTokenUnauthorized:      "Access token is unrecognizable by Gitea service",
-	EGiteaTokenInsufficientScope: "Gitea access token does not have enough scope",
-	EGiteaBranchDoesntExist:      "Gitea branch does not exist",
-	EGiteaRepositoryNotFound:     "Gitea repository not found",
-	EGiteaSecretTypeNotSupported: "The secret type with Gitea credentials is not supported",
-	EGiteaGitAppNotSupported:     "Git App functionality is not supported for Gitea",
+	EForgejoTokenUnauthorized:      "Access token is unrecognizable by Forgejo service",
+	EForgejoTokenInsufficientScope: "Forgejo access token does not have enough scope",
+	EForgejoBranchDoesntExist:      "Forgejo branch does not exist",
+	EForgejoRepositoryNotFound:     "Forgejo repository not found",
+	EForgejoSecretTypeNotSupported: "The secret type with Forgejo credentials is not supported",
+	EForgejoGitAppNotSupported:     "Git App functionality is not supported for Forgejo",
 
 	EFailedToParseImageAnnotation:        "Failed to parse image.redhat.com/image annotation value",
 	EComponentGitSecretMissing:           "Secret with git credential not found",

@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package gitea
+package forgejo
 
 import (
 	"errors"
@@ -31,35 +31,35 @@ func TestGetOwnerAndRepoFromUrl(t *testing.T) {
 	}{
 		{
 			name:      "Basic repository",
-			repoUrl:   "https://gitea.example.com/owner/repository",
+			repoUrl:   "https://forgejo.example.com/owner/repository",
 			wantOwner: "owner",
 			wantRepo:  "repository",
 			wantErr:   false,
 		},
 		{
 			name:      "Repository ending with .git",
-			repoUrl:   "https://gitea.example.com/owner/repository.git",
+			repoUrl:   "https://forgejo.example.com/owner/repository.git",
 			wantOwner: "owner",
 			wantRepo:  "repository",
 			wantErr:   false,
 		},
 		{
 			name:      "Repository with multiple path segments",
-			repoUrl:   "https://gitea.example.com/org/team/repository",
+			repoUrl:   "https://forgejo.example.com/org/team/repository",
 			wantOwner: "org",
 			wantRepo:  "team",
 			wantErr:   false,
 		},
 		{
 			name:      "Invalid URL - only owner",
-			repoUrl:   "https://gitea.example.com/owner",
+			repoUrl:   "https://forgejo.example.com/owner",
 			wantOwner: "",
 			wantRepo:  "",
 			wantErr:   true,
 		},
 		{
 			name:      "Invalid URL - no path",
-			repoUrl:   "https://gitea.example.com/",
+			repoUrl:   "https://forgejo.example.com/",
 			wantOwner: "",
 			wantRepo:  "",
 			wantErr:   true,
@@ -92,20 +92,20 @@ func TestGetBaseUrl(t *testing.T) {
 	}{
 		{
 			name:    "SaaS Gitea",
-			repoUrl: "https://gitea.com/owner/repository",
-			want:    "https://gitea.com/",
+			repoUrl: "https://forgejo.com/owner/repository",
+			want:    "https://forgejo.com/",
 			err:     nil,
 		},
 		{
 			name:    "Self-hosted Gitea",
-			repoUrl: "https://gitea.example.com/owner/repository",
-			want:    "https://gitea.example.com/",
+			repoUrl: "https://forgejo.example.com/owner/repository",
+			want:    "https://forgejo.example.com/",
 			err:     nil,
 		},
 		{
 			name:    "Repository with .git suffix",
-			repoUrl: "https://gitea.example.com/owner/repository.git",
-			want:    "https://gitea.example.com/",
+			repoUrl: "https://forgejo.example.com/owner/repository.git",
+			want:    "https://forgejo.example.com/",
 			err:     nil,
 		},
 		{
@@ -116,14 +116,14 @@ func TestGetBaseUrl(t *testing.T) {
 		},
 		{
 			name:    "Missing schema",
-			repoUrl: "gitea.example.com/owner/repository",
+			repoUrl: "forgejo.example.com/owner/repository",
 			want:    "",
 			err:     MissingSchemaError{},
 		},
 		{
 			name:    "HTTP URL",
-			repoUrl: "http://gitea.example.com/owner/repository",
-			want:    "http://gitea.example.com/",
+			repoUrl: "http://forgejo.example.com/owner/repository",
+			want:    "http://forgejo.example.com/",
 			err:     nil,
 		},
 	}
@@ -178,12 +178,12 @@ func TestGetBaseUrlMissingSchema(t *testing.T) {
 		repoUrl string
 	}{
 		{
-			name:    "gitea.com without schema",
-			repoUrl: "gitea.com/owner/repo",
+			name:    "forgejo.com without schema",
+			repoUrl: "forgejo.com/owner/repo",
 		},
 		{
 			name:    "Self-hosted without schema",
-			repoUrl: "gitea.example.com/owner/repo",
+			repoUrl: "forgejo.example.com/owner/repo",
 		},
 	}
 
@@ -259,13 +259,13 @@ func TestRefineGitHostingServiceError(t *testing.T) {
 			name:        "Nil response with 401 error message",
 			response:    nil,
 			originErr:   errors.New("401 Unauthorized"),
-			wantErrCode: 95, // EGiteaTokenUnauthorized
+			wantErrCode: 95, // EForgejoTokenUnauthorized
 		},
 		{
 			name:        "Nil response with 403 error message",
 			response:    nil,
 			originErr:   errors.New("403 Forbidden"),
-			wantErrCode: 96, // EGiteaTokenInsufficientScope
+			wantErrCode: 96, // EForgejoTokenInsufficientScope
 		},
 		{
 			name:        "Nil response with generic error",

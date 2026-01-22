@@ -14,13 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package gitea
+package forgejo
 
 import (
 	"fmt"
 	"strings"
 
-	"code.gitea.io/sdk/gitea"
+	"codeberg.org/mvdkleijn/forgejo-sdk/forgejo/v2"
 
 	"github.com/konflux-ci/build-service/pkg/boerrors"
 	gp "github.com/konflux-ci/build-service/pkg/git/gitprovider"
@@ -31,24 +31,24 @@ const (
 )
 
 var (
-	// PaC webhook events required for Gitea
+	// PaC webhook events required for Forgejo
 	appStudioPaCWebhookEvents = []string{"pull_request", "push", "issue_comment", "commit_comment"}
 )
 
 // Allow mocking for tests
-var NewGiteaClient func(accessToken, baseUrl string) (*GiteaClient, error) = newGiteaClient
-var NewGiteaClientWithBasicAuth func(username, password, baseUrl string) (*GiteaClient, error) = newGiteaClientWithBasicAuth
+var NewForgejoClient func(accessToken, baseUrl string) (*ForgejoClient, error) = newForgejoClient
+var NewForgejoClientWithBasicAuth func(username, password, baseUrl string) (*ForgejoClient, error) = newForgejoClientWithBasicAuth
 
-var _ gp.GitProviderClient = (*GiteaClient)(nil)
+var _ gp.GitProviderClient = (*ForgejoClient)(nil)
 
-type GiteaClient struct {
-	client *gitea.Client
+type ForgejoClient struct {
+	client *forgejo.Client
 }
 
 // EnsurePaCMergeRequest creates or updates existing (if needed) Pipelines as Code configuration proposal merge request.
 // Returns the merge request web URL.
 // If there is no error and web URL is empty, it means that the merge request is not needed (main branch is up to date).
-func (g *GiteaClient) EnsurePaCMergeRequest(repoUrl string, d *gp.MergeRequestData) (webUrl string, err error) {
+func (f *ForgejoClient) EnsurePaCMergeRequest(repoUrl string, d *gp.MergeRequestData) (webUrl string, err error) {
 	owner, repository, err := getOwnerAndRepoFromUrl(repoUrl)
 	if err != nil {
 		return "", err
@@ -56,23 +56,23 @@ func (g *GiteaClient) EnsurePaCMergeRequest(repoUrl string, d *gp.MergeRequestDa
 
 	// Determine base branch
 	if d.BaseBranchName == "" {
-		baseBranch, err := g.getDefaultBranchWithChecks(owner, repository)
+		baseBranch, err := f.getDefaultBranchWithChecks(owner, repository)
 		if err != nil {
 			return "", err
 		}
 		d.BaseBranchName = baseBranch
 	} else {
-		exists, err := g.branchExist(owner, repository, d.BaseBranchName)
+		exists, err := f.branchExist(owner, repository, d.BaseBranchName)
 		if err != nil {
 			return "", err
 		}
 		if !exists {
-			return "", boerrors.NewBuildOpError(boerrors.EGiteaBranchDoesntExist, fmt.Errorf("base branch '%s' does not exist", d.BaseBranchName))
+			return "", boerrors.NewBuildOpError(boerrors.EForgejoBranchDoesntExist, fmt.Errorf("base branch '%s' does not exist", d.BaseBranchName))
 		}
 	}
 
 	// Check if files are already up to date in base branch
-	filesUpToDate, err := g.filesUpToDate(owner, repository, d.BaseBranchName, d.Files)
+	filesUpToDate, err := f.filesUpToDate(owner, repository, d.BaseBranchName, d.Files)
 	if err != nil {
 		return "", err
 	}
@@ -82,27 +82,27 @@ func (g *GiteaClient) EnsurePaCMergeRequest(repoUrl string, d *gp.MergeRequestDa
 	}
 
 	// Check if PR branch exists
-	prBranchExists, err := g.branchExist(owner, repository, d.BranchName)
+	prBranchExists, err := f.branchExist(owner, repository, d.BranchName)
 	if err != nil {
 		return "", err
 	}
 
 	if prBranchExists {
 		// Branch exists, check if files are up to date
-		branchFilesUpToDate, err := g.filesUpToDate(owner, repository, d.BranchName, d.Files)
+		branchFilesUpToDate, err := f.filesUpToDate(owner, repository, d.BranchName, d.Files)
 		if err != nil {
 			return "", err
 		}
 		if !branchFilesUpToDate {
 			// Update files in the branch
-			err := g.commitFilesIntoBranch(owner, repository, d.BranchName, d.CommitMessage, d.AuthorName, d.AuthorEmail, d.SignedOff, d.Files)
+			err := f.commitFilesIntoBranch(owner, repository, d.BranchName, d.CommitMessage, d.AuthorName, d.AuthorEmail, d.SignedOff, d.Files)
 			if err != nil {
 				return "", err
 			}
 		}
 
 		// Check if PR already exists
-		pr, err := g.findPullRequestByBranches(owner, repository, d.BranchName, d.BaseBranchName)
+		pr, err := f.findPullRequestByBranches(owner, repository, d.BranchName, d.BaseBranchName)
 		if err != nil {
 			return "", err
 		}
@@ -112,40 +112,40 @@ func (g *GiteaClient) EnsurePaCMergeRequest(repoUrl string, d *gp.MergeRequestDa
 		}
 
 		// Check if there's a diff between branches
-		diffExists, err := g.diffNotEmpty(owner, repository, d.BranchName, d.BaseBranchName)
+		diffExists, err := f.diffNotEmpty(owner, repository, d.BranchName, d.BaseBranchName)
 		if err != nil {
 			return "", err
 		}
 		if !diffExists {
 			// No diff - delete stale branch and recurse
-			if _, err := g.deleteBranch(owner, repository, d.BranchName); err != nil {
+			if _, err := f.deleteBranch(owner, repository, d.BranchName); err != nil {
 				return "", err
 			}
-			return g.EnsurePaCMergeRequest(repoUrl, d)
+			return f.EnsurePaCMergeRequest(repoUrl, d)
 		}
 
 		// Create new PR
-		return g.createPullRequestWithinRepository(owner, repository, d.BranchName, d.BaseBranchName, d.Title, d.Text)
+		return f.createPullRequestWithinRepository(owner, repository, d.BranchName, d.BaseBranchName, d.Title, d.Text)
 	} else {
 		// Branch doesn't exist - create it
-		_, err = g.createBranch(owner, repository, d.BranchName, d.BaseBranchName)
+		_, err = f.createBranch(owner, repository, d.BranchName, d.BaseBranchName)
 		if err != nil {
 			return "", err
 		}
 
 		// Commit files to the new branch
-		err = g.commitFilesIntoBranch(owner, repository, d.BranchName, d.CommitMessage, d.AuthorName, d.AuthorEmail, d.SignedOff, d.Files)
+		err = f.commitFilesIntoBranch(owner, repository, d.BranchName, d.CommitMessage, d.AuthorName, d.AuthorEmail, d.SignedOff, d.Files)
 		if err != nil {
 			return "", err
 		}
 
 		// Create PR
-		return g.createPullRequestWithinRepository(owner, repository, d.BranchName, d.BaseBranchName, d.Title, d.Text)
+		return f.createPullRequestWithinRepository(owner, repository, d.BranchName, d.BaseBranchName, d.Title, d.Text)
 	}
 }
 
 // UndoPaCMergeRequest creates a merge request that removes Pipelines as Code configuration from the repository.
-func (g *GiteaClient) UndoPaCMergeRequest(repoUrl string, d *gp.MergeRequestData) (webUrl string, err error) {
+func (f *ForgejoClient) UndoPaCMergeRequest(repoUrl string, d *gp.MergeRequestData) (webUrl string, err error) {
 	owner, repository, err := getOwnerAndRepoFromUrl(repoUrl)
 	if err != nil {
 		return "", err
@@ -153,25 +153,25 @@ func (g *GiteaClient) UndoPaCMergeRequest(repoUrl string, d *gp.MergeRequestData
 
 	// Determine base branch
 	if d.BaseBranchName == "" {
-		baseBranch, err := g.getDefaultBranchWithChecks(owner, repository)
+		baseBranch, err := f.getDefaultBranchWithChecks(owner, repository)
 		if err != nil {
 			return "", err
 		}
 		d.BaseBranchName = baseBranch
 	} else {
-		exists, err := g.branchExist(owner, repository, d.BaseBranchName)
+		exists, err := f.branchExist(owner, repository, d.BaseBranchName)
 		if err != nil {
 			return "", err
 		}
 		if !exists {
-			return "", boerrors.NewBuildOpError(boerrors.EGiteaBranchDoesntExist, fmt.Errorf("base branch '%s' does not exist", d.BaseBranchName))
+			return "", boerrors.NewBuildOpError(boerrors.EForgejoBranchDoesntExist, fmt.Errorf("base branch '%s' does not exist", d.BaseBranchName))
 		}
 	}
 
 	// Check if any files to delete exist in base branch
 	hasFilesToDelete := false
 	for _, file := range d.Files {
-		exists, err := g.fileExist(owner, repository, d.BaseBranchName, file.FullPath)
+		exists, err := f.fileExist(owner, repository, d.BaseBranchName, file.FullPath)
 		if err != nil {
 			return "", err
 		}
@@ -187,34 +187,34 @@ func (g *GiteaClient) UndoPaCMergeRequest(repoUrl string, d *gp.MergeRequestData
 	}
 
 	// Delete old branch if it exists
-	branchExists, err := g.branchExist(owner, repository, d.BranchName)
+	branchExists, err := f.branchExist(owner, repository, d.BranchName)
 	if err != nil {
 		return "", err
 	}
 	if branchExists {
-		if _, err := g.deleteBranch(owner, repository, d.BranchName); err != nil {
+		if _, err := f.deleteBranch(owner, repository, d.BranchName); err != nil {
 			return "", err
 		}
 	}
 
 	// Create new branch
-	_, err = g.createBranch(owner, repository, d.BranchName, d.BaseBranchName)
+	_, err = f.createBranch(owner, repository, d.BranchName, d.BaseBranchName)
 	if err != nil {
 		return "", err
 	}
 
 	// Commit file deletions
-	err = g.commitDeletesIntoBranch(owner, repository, d.BranchName, d.CommitMessage, d.AuthorName, d.AuthorEmail, d.SignedOff, d.Files)
+	err = f.commitDeletesIntoBranch(owner, repository, d.BranchName, d.CommitMessage, d.AuthorName, d.AuthorEmail, d.SignedOff, d.Files)
 	if err != nil {
 		return "", err
 	}
 
 	// Create PR
-	return g.createPullRequestWithinRepository(owner, repository, d.BranchName, d.BaseBranchName, d.Title, d.Text)
+	return f.createPullRequestWithinRepository(owner, repository, d.BranchName, d.BaseBranchName, d.Title, d.Text)
 }
 
 // FindUnmergedPaCMergeRequest finds an existing unmerged PaC configuration merge request.
-func (g *GiteaClient) FindUnmergedPaCMergeRequest(repoUrl string, d *gp.MergeRequestData) (*gp.MergeRequest, error) {
+func (f *ForgejoClient) FindUnmergedPaCMergeRequest(repoUrl string, d *gp.MergeRequestData) (*gp.MergeRequest, error) {
 	owner, repository, err := getOwnerAndRepoFromUrl(repoUrl)
 	if err != nil {
 		return nil, err
@@ -223,14 +223,14 @@ func (g *GiteaClient) FindUnmergedPaCMergeRequest(repoUrl string, d *gp.MergeReq
 	// Determine base branch if not specified
 	baseBranch := d.BaseBranchName
 	if baseBranch == "" {
-		baseBranch, err = g.getDefaultBranchWithChecks(owner, repository)
+		baseBranch, err = f.getDefaultBranchWithChecks(owner, repository)
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	// Find PR by branches
-	pr, err := g.findPullRequestByBranches(owner, repository, d.BranchName, baseBranch)
+	pr, err := f.findPullRequestByBranches(owner, repository, d.BranchName, baseBranch)
 	if err != nil {
 		return nil, err
 	}
@@ -239,7 +239,7 @@ func (g *GiteaClient) FindUnmergedPaCMergeRequest(repoUrl string, d *gp.MergeReq
 		return nil, nil
 	}
 
-	// Convert Gitea PR to MergeRequest
+	// Convert Forgejo PR to MergeRequest
 	return &gp.MergeRequest{
 		Id:        pr.ID,
 		CreatedAt: pr.Created,
@@ -249,14 +249,14 @@ func (g *GiteaClient) FindUnmergedPaCMergeRequest(repoUrl string, d *gp.MergeReq
 }
 
 // SetupPaCWebhook creates a webhook for Pipelines as Code in the repository.
-func (g *GiteaClient) SetupPaCWebhook(repoUrl string, webhookUrl string, webhookSecret string) error {
+func (f *ForgejoClient) SetupPaCWebhook(repoUrl string, webhookUrl string, webhookSecret string) error {
 	owner, repository, err := getOwnerAndRepoFromUrl(repoUrl)
 	if err != nil {
 		return err
 	}
 
 	// Check if webhook already exists
-	existingWebhook, err := g.getWebhookByTargetUrl(owner, repository, webhookUrl)
+	existingWebhook, err := f.getWebhookByTargetUrl(owner, repository, webhookUrl)
 	if err != nil {
 		return err
 	}
@@ -268,8 +268,8 @@ func (g *GiteaClient) SetupPaCWebhook(repoUrl string, webhookUrl string, webhook
 
 	if existingWebhook == nil {
 		// Create new webhook
-		hookOpt := &gitea.CreateHookOption{
-			Type: "gitea",
+		hookOpt := &forgejo.CreateHookOption{
+			Type: "forgejo",
 			Config: map[string]string{
 				"url":          webhookUrl,
 				"content_type": webhookContentType,
@@ -286,19 +286,19 @@ func (g *GiteaClient) SetupPaCWebhook(repoUrl string, webhookUrl string, webhook
 			hookOpt.Config["insecure_ssl"] = "0"
 		}
 
-		_, err = g.createWebhook(owner, repository, hookOpt)
+		_, err = f.createWebhook(owner, repository, hookOpt)
 		return err
 	}
 
 	// Update existing webhook to ensure it has correct configuration
-	updateOpt := &gitea.EditHookOption{
+	updateOpt := &forgejo.EditHookOption{
 		Config: map[string]string{
 			"url":          webhookUrl,
 			"content_type": webhookContentType,
 			"secret":       webhookSecret,
 		},
 		Events:       appStudioPaCWebhookEvents,
-		Active:       gitea.OptionalBool(true),
+		Active:       forgejo.OptionalBool(true),
 		BranchFilter: "*",
 	}
 
@@ -308,19 +308,19 @@ func (g *GiteaClient) SetupPaCWebhook(repoUrl string, webhookUrl string, webhook
 		updateOpt.Config["insecure_ssl"] = "0"
 	}
 
-	_, err = g.updateWebhook(owner, repository, existingWebhook.ID, updateOpt)
+	_, err = f.updateWebhook(owner, repository, existingWebhook.ID, updateOpt)
 	return err
 }
 
 // DeletePaCWebhook deletes the Pipelines as Code webhook from the repository.
-func (g *GiteaClient) DeletePaCWebhook(repoUrl string, webhookUrl string) error {
+func (f *ForgejoClient) DeletePaCWebhook(repoUrl string, webhookUrl string) error {
 	owner, repository, err := getOwnerAndRepoFromUrl(repoUrl)
 	if err != nil {
 		return err
 	}
 
 	// Find webhook by URL
-	existingWebhook, err := g.getWebhookByTargetUrl(owner, repository, webhookUrl)
+	existingWebhook, err := f.getWebhookByTargetUrl(owner, repository, webhookUrl)
 	if err != nil {
 		return err
 	}
@@ -331,37 +331,37 @@ func (g *GiteaClient) DeletePaCWebhook(repoUrl string, webhookUrl string) error 
 	}
 
 	// Delete webhook
-	return g.deleteWebhook(owner, repository, existingWebhook.ID)
+	return f.deleteWebhook(owner, repository, existingWebhook.ID)
 }
 
 // GetDefaultBranchWithChecks returns the default branch of the repository with additional checks.
-func (g *GiteaClient) GetDefaultBranchWithChecks(repoUrl string) (string, error) {
+func (f *ForgejoClient) GetDefaultBranchWithChecks(repoUrl string) (string, error) {
 	owner, repository, err := getOwnerAndRepoFromUrl(repoUrl)
 	if err != nil {
 		return "", err
 	}
 
-	return g.getDefaultBranchWithChecks(owner, repository)
+	return f.getDefaultBranchWithChecks(owner, repository)
 }
 
 // DeleteBranch deletes a branch from the repository.
-func (g *GiteaClient) DeleteBranch(repoUrl string, branchName string) (bool, error) {
+func (f *ForgejoClient) DeleteBranch(repoUrl string, branchName string) (bool, error) {
 	owner, repository, err := getOwnerAndRepoFromUrl(repoUrl)
 	if err != nil {
 		return false, err
 	}
 
-	return g.deleteBranch(owner, repository, branchName)
+	return f.deleteBranch(owner, repository, branchName)
 }
 
 // GetBranchSha returns the SHA of the latest commit on the specified branch.
-func (g *GiteaClient) GetBranchSha(repoUrl string, branchName string) (string, error) {
+func (f *ForgejoClient) GetBranchSha(repoUrl string, branchName string) (string, error) {
 	owner, repository, err := getOwnerAndRepoFromUrl(repoUrl)
 	if err != nil {
 		return "", err
 	}
 
-	branch, resp, err := g.getBranch(owner, repository, branchName)
+	branch, resp, err := f.getBranch(owner, repository, branchName)
 	if err != nil {
 		return "", refineGitHostingServiceError(resp.Response, err)
 	}
@@ -373,8 +373,8 @@ func (g *GiteaClient) GetBranchSha(repoUrl string, branchName string) (string, e
 }
 
 // GetBrowseRepositoryAtShaLink returns a web URL to view the repository at a specific commit SHA.
-func (g *GiteaClient) GetBrowseRepositoryAtShaLink(repoUrl string, sha string) string {
-	// Gitea repository URL format: https://gitea.example.com/owner/repo/commit/sha
+func (f *ForgejoClient) GetBrowseRepositoryAtShaLink(repoUrl string, sha string) string {
+	// Forgejo repository URL format: https://forgejo.example.com/owner/repo/commit/sha
 	baseUrl, err := GetBaseUrl(repoUrl)
 	if err != nil {
 		return ""
@@ -390,63 +390,63 @@ func (g *GiteaClient) GetBrowseRepositoryAtShaLink(repoUrl string, sha string) s
 }
 
 // DownloadFileContent downloads the content of a file from the repository.
-func (g *GiteaClient) DownloadFileContent(repoUrl, branchName, filePath string) ([]byte, error) {
+func (f *ForgejoClient) DownloadFileContent(repoUrl, branchName, filePath string) ([]byte, error) {
 	owner, repository, err := getOwnerAndRepoFromUrl(repoUrl)
 	if err != nil {
 		return nil, err
 	}
 
-	return g.downloadFileContent(owner, repository, branchName, filePath)
+	return f.downloadFileContent(owner, repository, branchName, filePath)
 }
 
 // IsFileExist checks if a file exists in the repository at the specified branch.
-func (g *GiteaClient) IsFileExist(repoUrl, branchName, filePath string) (bool, error) {
+func (f *ForgejoClient) IsFileExist(repoUrl, branchName, filePath string) (bool, error) {
 	owner, repository, err := getOwnerAndRepoFromUrl(repoUrl)
 	if err != nil {
 		return false, err
 	}
 
-	return g.fileExist(owner, repository, branchName, filePath)
+	return f.fileExist(owner, repository, branchName, filePath)
 }
 
 // IsRepositoryPublic checks if the repository is publicly accessible.
-func (g *GiteaClient) IsRepositoryPublic(repoUrl string) (bool, error) {
+func (f *ForgejoClient) IsRepositoryPublic(repoUrl string) (bool, error) {
 	owner, repository, err := getOwnerAndRepoFromUrl(repoUrl)
 	if err != nil {
 		return false, err
 	}
 
-	return g.isRepositoryPublic(owner, repository)
+	return f.isRepositoryPublic(owner, repository)
 }
 
 // GetConfiguredGitAppName returns the configured Git App name.
-// Gitea does not support GitHub-style Apps, so this returns an error.
-func (g *GiteaClient) GetConfiguredGitAppName() (string, string, error) {
-	return "", "", boerrors.NewBuildOpError(boerrors.EGiteaGitAppNotSupported,
-		fmt.Errorf("Gitea does not support GitHub-style applications"))
+// Forgejo does not support GitHub-style Apps, so this returns an error.
+func (f *ForgejoClient) GetConfiguredGitAppName() (string, string, error) {
+	return "", "", boerrors.NewBuildOpError(boerrors.EForgejoGitAppNotSupported,
+		fmt.Errorf("Forgejo does not support GitHub-style applications"))
 }
 
 // GetAppUserId returns the user ID of the configured Git App.
-// Gitea does not support GitHub-style Apps, so this returns an error.
-func (g *GiteaClient) GetAppUserId(userName string) (int64, error) {
-	return 0, boerrors.NewBuildOpError(boerrors.EGiteaGitAppNotSupported,
-		fmt.Errorf("Gitea does not support GitHub-style applications"))
+// Forgejo does not support GitHub-style Apps, so this returns an error.
+func (f *ForgejoClient) GetAppUserId(userName string) (int64, error) {
+	return 0, boerrors.NewBuildOpError(boerrors.EForgejoGitAppNotSupported,
+		fmt.Errorf("Forgejo does not support GitHub-style applications"))
 }
 
-// newGiteaClient creates a new Gitea client with token authentication
-func newGiteaClient(accessToken, baseUrl string) (*GiteaClient, error) {
-	client, err := gitea.NewClient(baseUrl, gitea.SetToken(accessToken))
+// newForgejoClient creates a new Forgejo client with token authentication
+func newForgejoClient(accessToken, baseUrl string) (*ForgejoClient, error) {
+	client, err := forgejo.NewClient(baseUrl, forgejo.SetToken(accessToken))
 	if err != nil {
 		return nil, err
 	}
-	return &GiteaClient{client: client}, nil
+	return &ForgejoClient{client: client}, nil
 }
 
-// newGiteaClientWithBasicAuth creates a new Gitea client with basic authentication
-func newGiteaClientWithBasicAuth(username, password, baseUrl string) (*GiteaClient, error) {
-	client, err := gitea.NewClient(baseUrl, gitea.SetBasicAuth(username, password))
+// newForgejoClientWithBasicAuth creates a new Forgejo client with basic authentication
+func newForgejoClientWithBasicAuth(username, password, baseUrl string) (*ForgejoClient, error) {
+	client, err := forgejo.NewClient(baseUrl, forgejo.SetBasicAuth(username, password))
 	if err != nil {
 		return nil, err
 	}
-	return &GiteaClient{client: client}, nil
+	return &ForgejoClient{client: client}, nil
 }
