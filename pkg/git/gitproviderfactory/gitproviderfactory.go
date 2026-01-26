@@ -22,7 +22,7 @@ import (
 
 	"github.com/konflux-ci/build-service/pkg/boerrors"
 	. "github.com/konflux-ci/build-service/pkg/common"
-	"github.com/konflux-ci/build-service/pkg/git/gitea"
+	"github.com/konflux-ci/build-service/pkg/git/forgejo"
 	"github.com/konflux-ci/build-service/pkg/git/github"
 	"github.com/konflux-ci/build-service/pkg/git/gitlab"
 	"github.com/konflux-ci/build-service/pkg/git/gitprovider"
@@ -113,26 +113,26 @@ func createGitClient(gitClientConfig GitClientConfig) (gitprovider.GitProviderCl
 		return nil, boerrors.NewBuildOpError(boerrors.EGitLabSecretTypeNotSupported,
 			fmt.Errorf("failed to create git client: unsupported secret data. Expected username/password or token"))
 
-	case "gitea":
+	case "forgejo":
 		if isAppUsed {
-			return nil, boerrors.NewBuildOpError(boerrors.EGiteaGitAppNotSupported,
-				fmt.Errorf("Gitea does not support GitHub-style applications"))
+			return nil, boerrors.NewBuildOpError(boerrors.EForgejoGitAppNotSupported,
+				fmt.Errorf("Forgejo does not support GitHub-style applications"))
 		}
-		baseUrl, err := gitea.GetBaseUrl(gitClientConfig.RepoUrl)
+		baseUrl, err := forgejo.GetBaseUrl(gitClientConfig.RepoUrl)
 		if err != nil {
 			return nil, err
 		}
 		if usernameExists && passwordExists {
-			return gitea.NewGiteaClientWithBasicAuth(string(username), string(password), baseUrl)
+			return forgejo.NewForgejoClientWithBasicAuth(string(username), string(password), baseUrl)
 		}
 		if !usernameExists && passwordExists {
-			return gitea.NewGiteaClient(string(password), baseUrl)
+			return forgejo.NewForgejoClient(string(password), baseUrl)
 		}
 		if sshKeyExists {
-			return nil, boerrors.NewBuildOpError(boerrors.EGiteaSecretTypeNotSupported,
-				fmt.Errorf("failed to create git client: Gitea ssh key authentication not yet supported"))
+			return nil, boerrors.NewBuildOpError(boerrors.EForgejoSecretTypeNotSupported,
+				fmt.Errorf("failed to create git client: Forgejo ssh key authentication not yet supported"))
 		}
-		return nil, boerrors.NewBuildOpError(boerrors.EGiteaSecretTypeNotSupported,
+		return nil, boerrors.NewBuildOpError(boerrors.EForgejoSecretTypeNotSupported,
 			fmt.Errorf("failed to create git client: unsupported secret data. Expected username/password or token"))
 
 	case "bitbucket":

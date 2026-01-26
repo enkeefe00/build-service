@@ -21,7 +21,7 @@ import (
 	"testing"
 
 	. "github.com/konflux-ci/build-service/pkg/common"
-	"github.com/konflux-ci/build-service/pkg/git/gitea"
+	"github.com/konflux-ci/build-service/pkg/git/forgejo"
 	"github.com/konflux-ci/build-service/pkg/git/github"
 	"github.com/konflux-ci/build-service/pkg/git/gitlab"
 )
@@ -48,11 +48,11 @@ func TestGetContainerImageRepository(t *testing.T) {
 			t.Errorf("should not be invoked")
 			return nil, nil
 		}
-		gitea.NewGiteaClient = func(accessToken, baseUrl string) (*gitea.GiteaClient, error) {
+		forgejo.NewForgejoClient = func(accessToken, baseUrl string) (*forgejo.ForgejoClient, error) {
 			t.Errorf("should not be invoked")
 			return nil, nil
 		}
-		gitea.NewGiteaClientWithBasicAuth = func(username, password, baseUrl string) (*gitea.GiteaClient, error) {
+		forgejo.NewForgejoClientWithBasicAuth = func(username, password, baseUrl string) (*forgejo.ForgejoClient, error) {
 			t.Errorf("should not be invoked")
 			return nil, nil
 		}
@@ -226,17 +226,17 @@ func TestGetContainerImageRepository(t *testing.T) {
 			expectError:       true,
 		},
 		{
-			name: "should create Gitea client from token",
+			name: "should create Forgejo client from token",
 			gitClientConfig: GitClientConfig{
 				PacSecretData: map[string][]byte{
 					"password": []byte("token"),
 				},
-				GitProvider: "gitea",
-				RepoUrl:     "https://gitea.example.com/my-org/my-repo",
+				GitProvider: "forgejo",
+				RepoUrl:     "https://forgejo.example.com/my-org/my-repo",
 			},
 			allowConstructors: func() {
-				gitea.NewGiteaClient = func(accessToken, baseUrl string) (*gitea.GiteaClient, error) {
-					expectedBaseUrl := "https://gitea.example.com/"
+				forgejo.NewForgejoClient = func(accessToken, baseUrl string) (*forgejo.ForgejoClient, error) {
+					expectedBaseUrl := "https://forgejo.example.com/"
 					expectedToken := "token"
 					if baseUrl != expectedBaseUrl {
 						return nil, fmt.Errorf("Expected to get baseUrl: %s, got %s", expectedBaseUrl, baseUrl)
@@ -244,52 +244,52 @@ func TestGetContainerImageRepository(t *testing.T) {
 					if accessToken != expectedToken {
 						return nil, fmt.Errorf("Expected to get token: %s, got %s", expectedToken, accessToken)
 					}
-					return &gitea.GiteaClient{}, nil
+					return &forgejo.ForgejoClient{}, nil
 				}
 			},
 			expectError: false,
 		},
 		{
-			name: "should create Gitea client from username and password",
+			name: "should create Forgejo client from username and password",
 			gitClientConfig: GitClientConfig{
 				PacSecretData: map[string][]byte{
 					"username": []byte("user"),
 					"password": []byte("pass"),
 				},
-				GitProvider: "gitea",
-				RepoUrl:     "https://gitea.example.com/my-org/my-repo",
+				GitProvider: "forgejo",
+				RepoUrl:     "https://forgejo.example.com/my-org/my-repo",
 			},
 			allowConstructors: func() {
-				gitea.NewGiteaClientWithBasicAuth = func(username, password, baseUrl string) (*gitea.GiteaClient, error) {
-					expectedBaseUrl := "https://gitea.example.com/"
+				forgejo.NewForgejoClientWithBasicAuth = func(username, password, baseUrl string) (*forgejo.ForgejoClient, error) {
+					expectedBaseUrl := "https://forgejo.example.com/"
 					if baseUrl != expectedBaseUrl {
 						return nil, fmt.Errorf("Expected to get baseUrl: %s, got %s", expectedBaseUrl, baseUrl)
 					}
-					return &gitea.GiteaClient{}, nil
+					return &forgejo.ForgejoClient{}, nil
 				}
 			},
 			expectError: false,
 		},
 		{
-			name: "should fail to create Gitea client since the base url can't be detected",
+			name: "should fail to create Forgejo client since the base url can't be detected",
 			gitClientConfig: GitClientConfig{
 				PacSecretData: map[string][]byte{
 					"password": []byte("token"),
 				},
-				GitProvider: "gitea",
+				GitProvider: "forgejo",
 				RepoUrl:     "https://",
 			},
 			allowConstructors: func() {},
 			expectError:       true,
 		},
 		{
-			name: "should not create Gitea client from SSH key",
+			name: "should not create Forgejo client from SSH key",
 			gitClientConfig: GitClientConfig{
 				PacSecretData: map[string][]byte{
 					"ssh-privatekey": []byte("ssh-key"),
 				},
-				GitProvider: "gitea",
-				RepoUrl:     "https://gitea.example.com/my-org/my-repo",
+				GitProvider: "forgejo",
+				RepoUrl:     "https://forgejo.example.com/my-org/my-repo",
 			},
 			allowConstructors: func() {},
 			expectError:       true,

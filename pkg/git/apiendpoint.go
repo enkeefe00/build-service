@@ -26,12 +26,12 @@ func (g *GitlabAPIEndpoint) APIEndpoint(host string) string {
 	return fmt.Sprintf("https://%s/api/v4/", host)
 }
 
-// GiteaAPIEndpoint represents an API endpoint for Gitea.
-type GiteaAPIEndpoint struct {
+// ForgejoAPIEndpoint represents an API endpoint for Forgejo.
+type ForgejoAPIEndpoint struct {
 }
 
-// APIEndpoint returns the API Gitea endpoint.
-func (g *GiteaAPIEndpoint) APIEndpoint(host string) string {
+// APIEndpoint returns the API Forgejo endpoint.
+func (f *ForgejoAPIEndpoint) APIEndpoint(host string) string {
 	return fmt.Sprintf("https://%s/api/v1/", host)
 }
 
@@ -51,8 +51,8 @@ func BuildAPIEndpoint(endpointType string) APIEndpoint {
 		return &GithubAPIEndpoint{}
 	case "gitlab":
 		return &GitlabAPIEndpoint{}
-	case "gitea":
-		return &GiteaAPIEndpoint{}
+	case "forgejo":
+		return &ForgejoAPIEndpoint{}
 	default:
 		return &UnknownAPIEndpoint{}
 	}

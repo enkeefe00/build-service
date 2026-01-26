@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package gitea
+package forgejo
 
 import (
 	"fmt"
@@ -25,7 +25,7 @@ import (
 )
 
 func TestGetBrowseRepositoryAtShaLink(t *testing.T) {
-	baseUrl := "https://gitea.example.com"
+	baseUrl := "https://forgejo.example.com"
 
 	// "{{revision}}" is used in the pipeline generation
 	revisionArgument := "{{revision}}"
@@ -63,7 +63,7 @@ func TestGetBrowseRepositoryAtShaLink(t *testing.T) {
 	}
 
 	// Create a mock client to avoid DNS lookup
-	gClient := &GiteaClient{}
+	gClient := &ForgejoClient{}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -88,13 +88,13 @@ func TestGetBrowseRepositoryAtShaLinkInvalidUrl(t *testing.T) {
 		},
 		{
 			name:    "Invalid repo path",
-			repoUrl: "https://gitea.example.com/",
+			repoUrl: "https://forgejo.example.com/",
 			sha:     "abc123",
 		},
 	}
 
 	// Create a mock client to avoid DNS lookup
-	gClient := &GiteaClient{}
+	gClient := &ForgejoClient{}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -106,7 +106,7 @@ func TestGetBrowseRepositoryAtShaLinkInvalidUrl(t *testing.T) {
 	}
 }
 
-func TestNewGiteaClient(t *testing.T) {
+func TestNewForgejoClient(t *testing.T) {
 	tests := []struct {
 		name        string
 		accessToken string
@@ -123,19 +123,19 @@ func TestNewGiteaClient(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			client, err := NewGiteaClient(tt.accessToken, tt.baseUrl)
+			client, err := NewForgejoClient(tt.accessToken, tt.baseUrl)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("NewGiteaClient() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("NewForgejoClient() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !tt.wantErr && client == nil {
-				t.Error("NewGiteaClient() returned nil client")
+				t.Error("NewForgejoClient() returned nil client")
 			}
 		})
 	}
 }
 
-func TestNewGiteaClientWithBasicAuth(t *testing.T) {
+func TestNewForgejoClientWithBasicAuth(t *testing.T) {
 	tests := []struct {
 		name     string
 		username string
@@ -154,13 +154,13 @@ func TestNewGiteaClientWithBasicAuth(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			client, err := NewGiteaClientWithBasicAuth(tt.username, tt.password, tt.baseUrl)
+			client, err := NewForgejoClientWithBasicAuth(tt.username, tt.password, tt.baseUrl)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("NewGiteaClientWithBasicAuth() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("NewForgejoClientWithBasicAuth() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !tt.wantErr && client == nil {
-				t.Error("NewGiteaClientWithBasicAuth() returned nil client")
+				t.Error("NewForgejoClientWithBasicAuth() returned nil client")
 			}
 		})
 	}
@@ -170,7 +170,7 @@ func TestNewGiteaClientWithBasicAuth(t *testing.T) {
 
 func TestGetConfiguredGitAppName(t *testing.T) {
 	// Create a mock client to avoid DNS lookup
-	gClient := &GiteaClient{}
+	gClient := &ForgejoClient{}
 
 	name, slug, err := gClient.GetConfiguredGitAppName()
 	if err == nil {
@@ -184,8 +184,8 @@ func TestGetConfiguredGitAppName(t *testing.T) {
 	}
 
 	if buildOpErr, ok := err.(*boerrors.BuildOpError); ok {
-		if buildOpErr.GetErrorId() != int(boerrors.EGiteaGitAppNotSupported) {
-			t.Errorf("GetConfiguredGitAppName() error code = %v, want %v", buildOpErr.GetErrorId(), int(boerrors.EGiteaGitAppNotSupported))
+		if buildOpErr.GetErrorId() != int(boerrors.EForgejoGitAppNotSupported) {
+			t.Errorf("GetConfiguredGitAppName() error code = %v, want %v", buildOpErr.GetErrorId(), int(boerrors.EForgejoGitAppNotSupported))
 		}
 	} else {
 		t.Errorf("GetConfiguredGitAppName() should return BuildOpError, got %T", err)
@@ -194,7 +194,7 @@ func TestGetConfiguredGitAppName(t *testing.T) {
 
 func TestGetAppUserId(t *testing.T) {
 	// Create a mock client to avoid DNS lookup
-	gClient := &GiteaClient{}
+	gClient := &ForgejoClient{}
 
 	userId, err := gClient.GetAppUserId("username")
 	if err == nil {
@@ -205,8 +205,8 @@ func TestGetAppUserId(t *testing.T) {
 	}
 
 	if buildOpErr, ok := err.(*boerrors.BuildOpError); ok {
-		if buildOpErr.GetErrorId() != int(boerrors.EGiteaGitAppNotSupported) {
-			t.Errorf("GetAppUserId() error code = %v, want %v", buildOpErr.GetErrorId(), int(boerrors.EGiteaGitAppNotSupported))
+		if buildOpErr.GetErrorId() != int(boerrors.EForgejoGitAppNotSupported) {
+			t.Errorf("GetAppUserId() error code = %v, want %v", buildOpErr.GetErrorId(), int(boerrors.EForgejoGitAppNotSupported))
 		}
 	} else {
 		t.Errorf("GetAppUserId() should return BuildOpError, got %T", err)
@@ -227,7 +227,7 @@ func TestEnsurePaCMergeRequest(t *testing.T) {
 	}
 
 	// Create a mock client to avoid DNS lookup
-	gClient := &GiteaClient{}
+	gClient := &ForgejoClient{}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -262,7 +262,7 @@ func TestUndoPaCMergeRequest(t *testing.T) {
 	}
 
 	// Create a mock client to avoid DNS lookup
-	gClient := &GiteaClient{}
+	gClient := &ForgejoClient{}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -297,7 +297,7 @@ func TestFindUnmergedPaCMergeRequest(t *testing.T) {
 	}
 
 	// Create a mock client to avoid DNS lookup
-	gClient := &GiteaClient{}
+	gClient := &ForgejoClient{}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -327,7 +327,7 @@ func TestSetupPaCWebhook(t *testing.T) {
 	}
 
 	// Create a mock client to avoid DNS lookup
-	gClient := &GiteaClient{}
+	gClient := &ForgejoClient{}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -353,7 +353,7 @@ func TestDeletePaCWebhook(t *testing.T) {
 	}
 
 	// Create a mock client to avoid DNS lookup
-	gClient := &GiteaClient{}
+	gClient := &ForgejoClient{}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -381,7 +381,7 @@ func TestGetBranchSha(t *testing.T) {
 	}
 
 	// Create a mock client to avoid DNS lookup
-	gClient := &GiteaClient{}
+	gClient := &ForgejoClient{}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -409,7 +409,7 @@ func TestDeleteBranch(t *testing.T) {
 	}
 
 	// Create a mock client to avoid DNS lookup
-	gClient := &GiteaClient{}
+	gClient := &ForgejoClient{}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -435,7 +435,7 @@ func TestGetDefaultBranchWithChecks(t *testing.T) {
 	}
 
 	// Create a mock client to avoid DNS lookup
-	gClient := &GiteaClient{}
+	gClient := &ForgejoClient{}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -465,7 +465,7 @@ func TestDownloadFileContent(t *testing.T) {
 	}
 
 	// Create a mock client to avoid DNS lookup
-	gClient := &GiteaClient{}
+	gClient := &ForgejoClient{}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -495,7 +495,7 @@ func TestIsFileExist(t *testing.T) {
 	}
 
 	// Create a mock client to avoid DNS lookup
-	gClient := &GiteaClient{}
+	gClient := &ForgejoClient{}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -521,7 +521,7 @@ func TestIsRepositoryPublic(t *testing.T) {
 	}
 
 	// Create a mock client to avoid DNS lookup
-	gClient := &GiteaClient{}
+	gClient := &ForgejoClient{}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
