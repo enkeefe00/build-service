@@ -135,8 +135,6 @@ func createGitClient(gitClientConfig GitClientConfig) (gitprovider.GitProviderCl
 		return nil, boerrors.NewBuildOpError(boerrors.EForgejoSecretTypeNotSupported,
 			fmt.Errorf("failed to create git client: unsupported secret data. Expected username/password or token"))
 
-	case "bitbucket":
-		return nil, boerrors.NewBuildOpError(boerrors.EUnknownGitProvider, fmt.Errorf("git provider %s is not supported", gitProvider))
 	default:
 		return nil, boerrors.NewBuildOpError(boerrors.EUnknownGitProvider, fmt.Errorf("git provider %s is not supported", gitProvider))
 	}

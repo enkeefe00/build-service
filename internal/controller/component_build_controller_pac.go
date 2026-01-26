@@ -689,7 +689,7 @@ func validateGitSourceUrl(component appstudiov1alpha1.Component, gitProvider str
 
 // getGitProvider returns git provider name based on the repository url or the git-provider annotation
 func getGitProvider(component appstudiov1alpha1.Component) (string, error) {
-	allowedGitProviders := []string{"github", "gitlab", "forgejo", "bitbucket"}
+	allowedGitProviders := []string{"github", "gitlab", "forgejo"}
 	if component.Spec.Source.GitSource == nil {
 		return "", boerrors.NewBuildOpError(boerrors.EWrongGitSourceUrl, fmt.Errorf("git source URL is not set for %s Component in %s namespace", component.Name, component.Namespace))
 	}

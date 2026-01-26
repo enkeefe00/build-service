@@ -684,27 +684,6 @@ func TestValidatePaCConfiguration(t *testing.T) {
 			expectError: true,
 		},
 		{
-			name:        "should reject empty Bitbucket webhook token",
-			gitProvider: "bitbucket",
-			secret: corev1.Secret{
-				Data: map[string][]byte{
-					"password": []byte(""),
-				},
-			},
-			expectError: true,
-		},
-		{
-			name:        "test should reject empty Bitbucket username",
-			gitProvider: "bitbucket",
-			secret: corev1.Secret{
-				Data: map[string][]byte{
-					"username": []byte(""),
-					"password": []byte("token"),
-				},
-			},
-			expectError: true,
-		},
-		{
 			name:        "should reject unknown application configuration",
 			gitProvider: "unknown",
 			secret: corev1.Secret{
@@ -1400,26 +1379,6 @@ func TestGetGitProvider(t *testing.T) {
 			expectError:      true,
 		},
 		{
-			name:             "should detect bitbucket provider via http url",
-			componentRepoUrl: "https://bitbucket.org/user/test-component-repository",
-			want:             "bitbucket",
-		},
-		{
-			name:             "should detect bitbucket provider via git url",
-			componentRepoUrl: "git@bitbucket.org:user/test-component-repository",
-			expectError:      true,
-		},
-		{
-			name:             "should detect non-standard bitbucket provider via http url",
-			componentRepoUrl: "https://cooler.bitbucket.my-company.com/user/test-component-repository",
-			want:             "bitbucket",
-		},
-		{
-			name:             "should detect non-standard bitbucket provider via git url",
-			componentRepoUrl: "git@cooler.bitbucket.my-company.com:user/test-component-repository",
-			expectError:      true,
-		},
-		{
 			name:                           "should detect github provider via annotation",
 			componentRepoUrl:               "https://mydomain.com/user/test-component-repository",
 			componentGitProviderAnnotation: "github",
@@ -1430,12 +1389,6 @@ func TestGetGitProvider(t *testing.T) {
 			componentRepoUrl:               "https://mydomain.com/user/test-component-repository",
 			componentGitProviderAnnotation: "gitlab",
 			want:                           "gitlab",
-		},
-		{
-			name:                           "should detect bitbucket provider via annotation",
-			componentRepoUrl:               "https://mydomain.com/user/test-component-repository",
-			componentGitProviderAnnotation: "bitbucket",
-			want:                           "bitbucket",
 		},
 		{
 			name:                           "should prefer the annotation over the url",
