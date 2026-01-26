@@ -8,4 +8,7 @@ const (
 	// Keys of the GitHub app ID and the app private key in the pipelines-as-code-secret
 	PipelinesAsCodeGithubAppIdKey   = "github-application-id"
 	PipelinesAsCodeGithubPrivateKey = "github-private-key"
+
+	// User-Agent string for Git provider API clients
+	BuildServiceUserAgent = "KonfluxCI/0.1 (build-service)"
 )

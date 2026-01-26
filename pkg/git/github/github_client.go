@@ -25,6 +25,7 @@ import (
 	"github.com/google/go-github/v45/github"
 	"golang.org/x/oauth2"
 
+	"github.com/konflux-ci/build-service/pkg/common"
 	gp "github.com/konflux-ci/build-service/pkg/git/gitprovider"
 )
 
@@ -411,6 +412,7 @@ func newGithubClient(accessToken string) *GithubClient {
 	tc := oauth2.NewClient(gh.ctx, ts)
 
 	gh.client = github.NewClient(tc)
+	gh.client.UserAgent = common.BuildServiceUserAgent
 
 	return gh
 }
@@ -424,6 +426,7 @@ func newGithubClientWithBasicAuth(username, password string) *GithubClient {
 		Password: strings.TrimSpace(password),
 	}
 	gh.client = github.NewClient(tp.Client())
+	gh.client.UserAgent = common.BuildServiceUserAgent
 
 	return gh
 }
