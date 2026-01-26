@@ -239,15 +239,19 @@ func (f *ForgejoClient) getDefaultBranchWithChecks(owner, repository string) (st
 }
 
 // fileExist checks if a file exists in the repository at the given branch
-func (f *ForgejoClient) fileExist(owner, repository, branch, filePath string) (bool, error) {
-	_, resp, err := f.client.GetContents(owner, repository, branch, filePath)
+// Returns: exists (bool), sha (string), error
+func (f *ForgejoClient) fileExist(owner, repository, branch, filePath string) (bool, string, error) {
+	contents, resp, err := f.client.GetContents(owner, repository, branch, filePath)
 	if err != nil {
 		if resp != nil && resp.StatusCode == http.StatusNotFound {
-			return false, nil
+			return false, "", nil
 		}
-		return false, refineGitHostingServiceError(resp.Response, err)
+		return false, "", refineGitHostingServiceError(resp.Response, err)
 	}
-	return true, nil
+	if contents == nil {
+		return false, "", nil
+	}
+	return true, contents.SHA, nil
 }
 
 // isRepositoryPublic checks if the repository is public
@@ -268,7 +272,7 @@ func (f *ForgejoClient) commitFilesIntoBranch(owner, repository, branchName, com
 	// Each file needs to be created/updated individually
 	for _, file := range files {
 		// Check if file exists to determine if we should create or update
-		exists, err := f.fileExist(owner, repository, branchName, file.FullPath)
+		exists, sha, err := f.fileExist(owner, repository, branchName, file.FullPath)
 		if err != nil {
 			return err
 		}
@@ -288,6 +292,7 @@ func (f *ForgejoClient) commitFilesIntoBranch(owner, repository, branchName, com
 					Committer:  author,
 					Signoff:    signedOff,
 				},
+				SHA:     sha,
 				Content: base64Encode(file.Content),
 			}
 			_, resp, err := f.client.UpdateFile(owner, repository, file.FullPath, opts)
@@ -320,6 +325,16 @@ func (f *ForgejoClient) commitFilesIntoBranch(owner, repository, branchName, com
 func (f *ForgejoClient) commitDeletesIntoBranch(owner, repository, branchName, commitMessage, authorName, authorEmail string, signedOff bool, files []gp.RepositoryFile) error {
 	// Delete each file individually
 	for _, file := range files {
+		// Get the file's SHA before deleting
+		exists, sha, err := f.fileExist(owner, repository, branchName, file.FullPath)
+		if err != nil {
+			return fmt.Errorf("failed to check if file %s exists in %s/%s branch %s: %w", file.FullPath, owner, repository, branchName, err)
+		}
+		if !exists {
+			// File doesn't exist, skip deletion
+			continue
+		}
+
 		author := forgejo.Identity{
 			Name:  authorName,
 			Email: authorEmail,
@@ -333,6 +348,7 @@ func (f *ForgejoClient) commitDeletesIntoBranch(owner, repository, branchName, c
 				Committer:  author,
 				Signoff:    signedOff,
 			},
+			SHA: sha,
 		}
 
 		resp, err := f.client.DeleteFile(owner, repository, file.FullPath, opts)
