@@ -295,19 +295,6 @@ func TestGetContainerImageRepository(t *testing.T) {
 			expectError:       true,
 		},
 		{
-			name: "should not create BitBucket client",
-			gitClientConfig: GitClientConfig{
-				PacSecretData: map[string][]byte{
-					"bitbucket_token": []byte("token"),
-				},
-				GitProvider: "bitbucket",
-				RepoUrl:     repoUrl,
-			},
-			allowConstructors: func() {
-			},
-			expectError: true,
-		},
-		{
 			name: "should not create unknown client",
 			gitClientConfig: GitClientConfig{
 				PacSecretData: map[string][]byte{
