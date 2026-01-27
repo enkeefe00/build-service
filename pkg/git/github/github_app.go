@@ -26,13 +26,22 @@ import (
 
 	ghinstallation "github.com/bradleyfalzon/ghinstallation/v2"
 	"github.com/google/go-github/v45/github"
+
 	"github.com/konflux-ci/build-service/pkg/boerrors"
+	"github.com/konflux-ci/build-service/pkg/common"
 )
 
 // Allow mocking for tests
 var NewGithubClientByApp func(appId int64, privateKeyPem []byte, repoUrl string) (*GithubClient, error) = newGithubClientByApp
 
 var GetAppInstallationsForRepository func(githubAppIdStr string, appPrivateKeyPem []byte, repoUrl string) (*ApplicationInstallation, string, error) = getAppInstallationsForRepository
+
+// github client for local app operations, not the final client used by the rest of the controller
+func localGithubClient(httpClient *http.Client) *github.Client {
+	client := github.NewClient(httpClient)
+	client.UserAgent = common.BuildServiceUserAgent
+	return client
+}
 
 func newGithubClientByApp(appId int64, privateKeyPem []byte, repoUrl string) (*GithubClient, error) {
 	owner, repository := getOwnerAndRepoFromUrl(repoUrl)
@@ -42,7 +51,7 @@ func newGithubClientByApp(appId int64, privateKeyPem []byte, repoUrl string) (*G
 		// Inability to create transport based on a private key indicates that the key is bad formatted
 		return nil, boerrors.NewBuildOpError(boerrors.EGitHubAppMalformedPrivateKey, err)
 	}
-	client := github.NewClient(&http.Client{Transport: itr})
+	client := localGithubClient(&http.Client{Transport: itr})
 
 	// check if application exists
 	githubApp, resp, err := client.Apps.Get(context.Background(), "")
@@ -134,7 +143,7 @@ func getAppInstallationsForRepository(githubAppIdStr string, appPrivateKeyPem []
 		// Inability to create transport based on a private key indicates that the key is bad formatted
 		return nil, "", boerrors.NewBuildOpError(boerrors.EGitHubAppMalformedPrivateKey, err)
 	}
-	client := github.NewClient(&http.Client{Transport: itr})
+	client := localGithubClient(&http.Client{Transport: itr})
 	githubApp, _, err := client.Apps.Get(context.Background(), "")
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to load GitHub app metadata, %w", err)

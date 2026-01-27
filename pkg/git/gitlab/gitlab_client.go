@@ -24,6 +24,7 @@ import (
 	"github.com/xanzy/go-gitlab"
 
 	"github.com/konflux-ci/build-service/pkg/boerrors"
+	"github.com/konflux-ci/build-service/pkg/common"
 	gp "github.com/konflux-ci/build-service/pkg/git/gitprovider"
 )
 
@@ -375,6 +376,7 @@ func newGitlabClient(accessToken, baseUrl string) (*GitlabClient, error) {
 	if err != nil {
 		return nil, err
 	}
+	c.UserAgent = common.BuildServiceUserAgent
 	glc.client = c
 
 	return glc, nil
@@ -386,6 +388,7 @@ func newGitlabClientWithBasicAuth(username, password, baseUrl string) (*GitlabCl
 	if err != nil {
 		return nil, err
 	}
+	c.UserAgent = common.BuildServiceUserAgent
 	glc.client = c
 
 	return glc, nil

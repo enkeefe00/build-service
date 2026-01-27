@@ -23,6 +23,7 @@ import (
 	"codeberg.org/mvdkleijn/forgejo-sdk/forgejo/v2"
 
 	"github.com/konflux-ci/build-service/pkg/boerrors"
+	"github.com/konflux-ci/build-service/pkg/common"
 	gp "github.com/konflux-ci/build-service/pkg/git/gitprovider"
 )
 
@@ -435,7 +436,11 @@ func (f *ForgejoClient) GetAppUserId(userName string) (int64, error) {
 
 // newForgejoClient creates a new Forgejo client with token authentication
 func newForgejoClient(accessToken, baseUrl string) (*ForgejoClient, error) {
-	client, err := forgejo.NewClient(baseUrl, forgejo.SetToken(accessToken))
+	client, err := forgejo.NewClient(
+		baseUrl,
+		forgejo.SetToken(accessToken),
+		forgejo.SetUserAgent(common.BuildServiceUserAgent),
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -444,7 +449,11 @@ func newForgejoClient(accessToken, baseUrl string) (*ForgejoClient, error) {
 
 // newForgejoClientWithBasicAuth creates a new Forgejo client with basic authentication
 func newForgejoClientWithBasicAuth(username, password, baseUrl string) (*ForgejoClient, error) {
-	client, err := forgejo.NewClient(baseUrl, forgejo.SetBasicAuth(username, password))
+	client, err := forgejo.NewClient(
+		baseUrl,
+		forgejo.SetBasicAuth(username, password),
+		forgejo.SetUserAgent(common.BuildServiceUserAgent),
+	)
 	if err != nil {
 		return nil, err
 	}
