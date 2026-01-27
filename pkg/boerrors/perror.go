@@ -131,9 +131,9 @@ const (
 	// EGitHubReachRateLimit reach the GitHub REST API rate limit.
 	EGitHubReachRateLimit BOErrorId = 76
 	// EGitHubSecretInvalid the secret with GitHub App credentials is invalid.
-	EGitHubSecretInvalid = 77
+	EGitHubSecretInvalid = 79
 	// EGitHubSecretTypeNotSupported the secret type with GitHub App credentials is not supported.
-	EGitHubSecretTypeNotSupported = 78
+	EGitHubSecretTypeNotSupported = 80
 
 	// EGitLabTokenUnauthorized access token is not recognized by GitLab and 401 is responded.
 	// The access token may be malformed or expired.
