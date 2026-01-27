@@ -172,7 +172,7 @@ func (f *ForgejoClient) UndoPaCMergeRequest(repoUrl string, d *gp.MergeRequestDa
 	// Check if any files to delete exist in base branch
 	hasFilesToDelete := false
 	for _, file := range d.Files {
-		exists, err := f.fileExist(owner, repository, d.BaseBranchName, file.FullPath)
+		exists, _, err := f.fileExist(owner, repository, d.BaseBranchName, file.FullPath)
 		if err != nil {
 			return "", err
 		}
@@ -407,7 +407,8 @@ func (f *ForgejoClient) IsFileExist(repoUrl, branchName, filePath string) (bool,
 		return false, err
 	}
 
-	return f.fileExist(owner, repository, branchName, filePath)
+	exists, _, err := f.fileExist(owner, repository, branchName, filePath)
+	return exists, err
 }
 
 // IsRepositoryPublic checks if the repository is publicly accessible.
